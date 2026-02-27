@@ -1,0 +1,80 @@
+input
+PeriodoCurto(3)
+PeriodoReferencia(8)
+PeriodoLongo(20)
+PeriodoADX(8)
+MediaADX(3)
+NivelADX(22)
+
+var
+mediaCurto : Float
+mediaReferencia : Float
+mediaLongo : Float
+didiCurto : Float
+didiLongo : Float
+cruzouHoje : Boolean
+cruzouOntem : Boolean
+adxValor : Float
+diPlus : Float
+diMinus : Float
+adxSubindo : Boolean
+diCruzouHoje : Boolean
+diCruzouOntem : Boolean
+diSubindo : Boolean
+
+begin
+
+mediaCurto := Media(PeriodoCurto, Close)
+mediaReferencia := Media(PeriodoReferencia, Close)
+mediaLongo := Media(PeriodoLongo, Close)
+
+didiCurto := mediaCurto - mediaReferencia
+didiLongo := mediaLongo - mediaReferencia
+
+// Cruzamento HOJE ocorrendo sobre a linha zero
+cruzouHoje := (
+               ((didiCurto[1] < didiLongo[1]) and (didiCurto > didiLongo)) or
+               ((didiCurto[1] > didiLongo[1]) and (didiCurto < didiLongo))
+              )
+              and
+              (Abs(didiCurto) < 0.0001) and
+              (Abs(didiLongo) < 0.0001)
+
+// Cruzamento ONTEM (D-1) ocorrido sobre a linha zero
+cruzouOntem := (
+                ((didiCurto[2] < didiLongo[2]) and (didiCurto[1] > didiLongo[1])) or
+                ((didiCurto[2] > didiLongo[2]) and (didiCurto[1] < didiLongo[1]))
+               )
+               and
+               (Abs(didiCurto[1]) < 0.0001) and
+               (Abs(didiLongo[1]) < 0.0001)
+
+// Indicador DI+/DI-/ADX
+adxValor := ADX(PeriodoADX, MediaADX)
+diPlus := DIPlus(PeriodoADX)
+diMinus := DIMinus(PeriodoADX)
+
+adxSubindo := (adxValor > NivelADX) and (adxValor > adxValor[1])
+
+// Cruzamento DI+ e DI- hoje
+// (se quiser apenas cruzamento de alta, mantenha só a primeira condição)
+diCruzouHoje := ((diPlus[1] < diMinus[1]) and (diPlus > diMinus)) or
+                ((diPlus[1] > diMinus[1]) and (diPlus < diMinus))
+
+// Cruzamento DI+ e DI- ontem (D-1)
+diCruzouOntem := ((diPlus[2] < diMinus[2]) and (diPlus[1] > diMinus[1])) or
+                 ((diPlus[2] > diMinus[2]) and (diPlus[1] < diMinus[1]))
+
+// DI+ e DI- subindo
+// (se preferir só DI+ subindo, remova a comparação do DI-)
+diSubindo := (diPlus > diPlus[1]) and (diMinus > diMinus[1])
+
+if (cruzouHoje or cruzouOntem) and
+   (diCruzouHoje or diCruzouOntem) and
+   adxSubindo and
+   diSubindo then
+begin
+   Select;
+end;
+
+end;
